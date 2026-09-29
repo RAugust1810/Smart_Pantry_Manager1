@@ -84,7 +84,7 @@ public class RecipeActivity extends AppCompatActivity {
         // Get all recipes
         Cursor recipeCursor = databaseHelper.getRecommendedRecipes();
 
-        int recommendedCount = 0;
+        int recipeCount = 0;
 
         while (recipeCursor.moveToNext()) {
 
@@ -103,27 +103,37 @@ public class RecipeActivity extends AppCompatActivity {
             String[] recipeIngredients =
                     ingredientsText.split(",");
 
-            boolean canMakeRecipe = true;
+            int matchedIngredients = 0;
 
             for (String ingredient : recipeIngredients) {
 
                 String requiredIngredient =
                         ingredient.trim().toLowerCase();
 
-                if (!pantryIngredients.contains(requiredIngredient)) {
-                    canMakeRecipe = false;
-                    break;
+                if (pantryIngredients.contains(requiredIngredient)) {
+                    matchedIngredients++;
                 }
             }
 
-            if (canMakeRecipe) {
+            int totalIngredients = recipeIngredients.length;
+
+            int matchPercentage =
+                    (matchedIngredients * 100) / totalIngredients;
+
+            // Only display recipes with at least one matching ingredient
+            if (matchedIngredients > 0) {
 
                 TextView recipeView = new TextView(this);
 
                 recipeView.setText(
                         recipeName + "\n\n" +
                                 description + "\n\n" +
-                                "Ingredients: " + ingredientsText
+                                "Ingredients: " + ingredientsText + "\n\n" +
+                                "Ingredients available: " +
+                                matchedIngredients + " of " +
+                                totalIngredients + "\n" +
+                                "Match: " +
+                                matchPercentage + "%"
                 );
 
                 recipeView.setTextSize(16);
@@ -131,19 +141,19 @@ public class RecipeActivity extends AppCompatActivity {
 
                 recipesContainer.addView(recipeView);
 
-                recommendedCount++;
+                recipeCount++;
             }
         }
 
         recipeCursor.close();
 
-        // Show a message if no recipes match
-        if (recommendedCount == 0) {
+        // Show a message if there are no matching recipes
+        if (recipeCount == 0) {
 
             TextView noRecipesMessage = new TextView(this);
 
             noRecipesMessage.setText(
-                    "No recipes can currently be made with your pantry ingredients."
+                    "No recipes match your current pantry ingredients."
             );
 
             noRecipesMessage.setTextSize(16);

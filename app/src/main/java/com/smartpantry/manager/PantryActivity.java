@@ -4,8 +4,10 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -60,7 +62,11 @@ public class PantryActivity extends AppCompatActivity {
         if (cursor.getCount() == 0) {
 
             TextView emptyMessage = new TextView(this);
-            emptyMessage.setText("No ingredients added yet.");
+
+            emptyMessage.setText(
+                    "No ingredients added yet."
+            );
+
             emptyMessage.setTextSize(16);
             emptyMessage.setPadding(0, 16, 0, 16);
 
@@ -69,6 +75,10 @@ public class PantryActivity extends AppCompatActivity {
         } else {
 
             while (cursor.moveToNext()) {
+
+                int ingredientId = cursor.getInt(
+                        cursor.getColumnIndexOrThrow("id")
+                );
 
                 String name = cursor.getString(
                         cursor.getColumnIndexOrThrow("name")
@@ -105,15 +115,52 @@ public class PantryActivity extends AppCompatActivity {
                         R.id.tvIngredientCategory
                 );
 
+                Button btnDelete = ingredientView.findViewById(
+                        R.id.btnDeleteIngredient
+                );
+
                 tvName.setText(name);
-                tvQuantity.setText(quantity + " " + unit);
+
+                tvQuantity.setText(
+                        quantity + " " + unit
+                );
+
                 tvCategory.setText(
                         category.isEmpty()
                                 ? "No category"
                                 : category
                 );
 
-                ingredientsContainer.addView(ingredientView);
+                btnDelete.setOnClickListener(v -> {
+
+                    boolean deleted =
+                            databaseHelper.deleteIngredient(
+                                    ingredientId
+                            );
+
+                    if (deleted) {
+
+                        Toast.makeText(
+                                PantryActivity.this,
+                                "Ingredient deleted.",
+                                Toast.LENGTH_SHORT
+                        ).show();
+
+                        loadIngredients();
+
+                    } else {
+
+                        Toast.makeText(
+                                PantryActivity.this,
+                                "Unable to delete ingredient.",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                });
+
+                ingredientsContainer.addView(
+                        ingredientView
+                );
             }
         }
 

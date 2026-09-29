@@ -126,4 +126,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 null
         );
     }
+
+    public boolean deleteIngredient(int id) {
+
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        int result = db.delete(
+                "ingredients",
+                "id = ?",
+                new String[]{String.valueOf(id)}
+        );
+
+        return result > 0;
+    }
+
 }
