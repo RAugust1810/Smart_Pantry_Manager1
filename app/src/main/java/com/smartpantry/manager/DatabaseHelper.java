@@ -9,7 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "smart_pantry.db";
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 4;
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -32,19 +32,68 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "name TEXT NOT NULL, " +
                 "description TEXT, " +
-                "ingredients TEXT NOT NULL" +
+                "ingredients TEXT NOT NULL, " +
+                "instructions TEXT" +
                 ")";
 
         db.execSQL(createRecipesTable);
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    public void onUpgrade(
+            SQLiteDatabase db,
+            int oldVersion,
+            int newVersion) {
 
-        db.execSQL("DROP TABLE IF EXISTS ingredients");
-        db.execSQL("DROP TABLE IF EXISTS recipes");
+        // Upgrade from database version 3 to version 4
+        // without deleting existing pantry ingredients.
+        if (oldVersion < 4) {
 
-        onCreate(db);
+            db.execSQL(
+                    "ALTER TABLE recipes ADD COLUMN instructions TEXT"
+            );
+
+            // Add instructions to the existing recipes
+            db.execSQL(
+                    "UPDATE recipes SET instructions = ? " +
+                            "WHERE name = ?",
+                    new String[]{
+                            "1. Cut the chicken into smaller pieces.\n" +
+                                    "2. Peel and cut the potatoes.\n" +
+                                    "3. Place the chicken and potatoes in a baking dish.\n" +
+                                    "4. Add vegetables and season to taste.\n" +
+                                    "5. Bake until the chicken and potatoes are fully cooked.",
+                            "Chicken & Potato Bake"
+                    }
+            );
+
+            db.execSQL(
+                    "UPDATE recipes SET instructions = ? " +
+                            "WHERE name = ?",
+                    new String[]{
+                            "1. Wash and cut the vegetables.\n" +
+                                    "2. Heat a small amount of oil in a pan.\n" +
+                                    "3. Add the vegetables and stir-fry.\n" +
+                                    "4. Cook until the vegetables are tender.\n" +
+                                    "5. Serve while warm.",
+                            "Vegetable Stir Fry"
+                    }
+            );
+
+            db.execSQL(
+                    "UPDATE recipes SET instructions = ? " +
+                            "WHERE name = ?",
+                    new String[]{
+                            "1. Cut the chicken into smaller pieces.\n" +
+                                    "2. Wash and cut the vegetables.\n" +
+                                    "3. Heat a small amount of oil in a pan.\n" +
+                                    "4. Cook the chicken thoroughly.\n" +
+                                    "5. Add the vegetables and stir-fry.\n" +
+                                    "6. Serve while warm.",
+                            "Chicken & Vegetable Stir Fry"
+                    }
+            );
+        }
     }
 
     // Add a new ingredient to the pantry
@@ -87,7 +136,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public boolean addRecipe(
             String name,
             String description,
-            String ingredients) {
+            String ingredients,
+            String instructions) {
 
         SQLiteDatabase db = this.getWritableDatabase();
 
@@ -96,6 +146,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put("name", name);
         values.put("description", description);
         values.put("ingredients", ingredients);
+        values.put("instructions", instructions);
 
         long result = db.insert(
                 "recipes",
@@ -117,6 +168,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         );
     }
 
+    // Get recipes for recommendation
     public Cursor getRecommendedRecipes() {
 
         SQLiteDatabase db = this.getReadableDatabase();
@@ -127,6 +179,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         );
     }
 
+    // Delete ingredient
     public boolean deleteIngredient(int id) {
 
         SQLiteDatabase db = this.getWritableDatabase();
@@ -140,6 +193,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return result > 0;
     }
 
+    // Update ingredient
     public boolean updateIngredient(
             int id,
             String name,
@@ -165,5 +219,4 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         return result > 0;
     }
-
 }

@@ -21,63 +21,159 @@ public class AddIngredientActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_ingredient);
 
-        etIngredientName = findViewById(R.id.etIngredientName);
-        etQuantity = findViewById(R.id.etQuantity);
-        etUnit = findViewById(R.id.etUnit);
-        etCategory = findViewById(R.id.etCategory);
+        etIngredientName = findViewById(
+                R.id.etIngredientName
+        );
 
-        Button btnSaveIngredient = findViewById(R.id.btnSaveIngredient);
+        etQuantity = findViewById(
+                R.id.etQuantity
+        );
+
+        etUnit = findViewById(
+                R.id.etUnit
+        );
+
+        etCategory = findViewById(
+                R.id.etCategory
+        );
+
+        Button btnSaveIngredient = findViewById(
+                R.id.btnSaveIngredient
+        );
 
         databaseHelper = new DatabaseHelper(this);
 
-        btnSaveIngredient.setOnClickListener(v -> saveIngredient());
+        btnSaveIngredient.setOnClickListener(
+                v -> saveIngredient()
+        );
     }
 
     private void saveIngredient() {
 
-        String name = etIngredientName.getText().toString().trim();
-        String quantityText = etQuantity.getText().toString().trim();
-        String unit = etUnit.getText().toString().trim();
-        String category = etCategory.getText().toString().trim();
+        String name =
+                etIngredientName.getText()
+                        .toString()
+                        .trim();
 
-        if (name.isEmpty() || quantityText.isEmpty() || unit.isEmpty()) {
-            Toast.makeText(this,
-                    "Please complete the required fields.",
-                    Toast.LENGTH_SHORT).show();
+        String quantityText =
+                etQuantity.getText()
+                        .toString()
+                        .trim();
+
+        String unit =
+                etUnit.getText()
+                        .toString()
+                        .trim();
+
+        String category =
+                etCategory.getText()
+                        .toString()
+                        .trim();
+
+        // Check ingredient name
+        if (name.isEmpty()) {
+
+            etIngredientName.setError(
+                    "Please enter an ingredient name."
+            );
+
+            etIngredientName.requestFocus();
+
+            return;
+        }
+
+        // Check quantity
+        if (quantityText.isEmpty()) {
+
+            etQuantity.setError(
+                    "Please enter a quantity."
+            );
+
+            etQuantity.requestFocus();
+
+            return;
+        }
+
+        // Check unit
+        if (unit.isEmpty()) {
+
+            etUnit.setError(
+                    "Please enter a unit."
+            );
+
+            etUnit.requestFocus();
+
+            return;
+        }
+
+        // Check category
+        if (category.isEmpty()) {
+
+            etCategory.setError(
+                    "Please enter a category."
+            );
+
+            etCategory.requestFocus();
+
             return;
         }
 
         double quantity;
 
         try {
-            quantity = Double.parseDouble(quantityText);
+
+            quantity = Double.parseDouble(
+                    quantityText
+            );
+
         } catch (NumberFormatException e) {
-            Toast.makeText(this,
-                    "Please enter a valid quantity.",
-                    Toast.LENGTH_SHORT).show();
+
+            etQuantity.setError(
+                    "Please enter a valid number."
+            );
+
+            etQuantity.requestFocus();
+
             return;
         }
 
-        boolean success = databaseHelper.addIngredient(
-                name,
-                quantity,
-                unit,
-                category
-        );
+        // Quantity must be greater than zero
+        if (quantity <= 0) {
+
+            etQuantity.setError(
+                    "Quantity must be greater than zero."
+            );
+
+            etQuantity.requestFocus();
+
+            return;
+        }
+
+        boolean success =
+                databaseHelper.addIngredient(
+                        name,
+                        quantity,
+                        unit,
+                        category
+                );
 
         if (success) {
 
-            Toast.makeText(this,
+            Toast.makeText(
+                    this,
                     "Ingredient saved successfully!",
-                    Toast.LENGTH_SHORT).show();
+                    Toast.LENGTH_SHORT
+            ).show();
 
             finish();
 
         } else {
 
-            Toast.makeText(this,
+            Toast.makeText(
+                    this,
                     "Unable to save ingredient.",
-                    Toast.LENGTH_SHORT).show();
+                    Toast.LENGTH_SHORT
+            ).show();
         }
     }
 }
