@@ -17,18 +17,51 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-        DatabaseHelper databaseHelper = new DatabaseHelper(this);
+        DatabaseHelper databaseHelper =
+                new DatabaseHelper(this);
+
         databaseHelper.getWritableDatabase();
 
-        findViewById(R.id.btnMyPantry).setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, PantryActivity.class);
-            startActivity(intent);
-        });
+        findViewById(R.id.btnMyPantry)
+                .setOnClickListener(v -> {
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+                    Intent intent = new Intent(
+                            MainActivity.this,
+                            PantryActivity.class
+                    );
+
+                    startActivity(intent);
+                });
+
+        findViewById(R.id.btnSettings)
+                .setOnClickListener(v -> {
+
+                    Intent intent = new Intent(
+                            MainActivity.this,
+                            SettingsActivity.class
+                    );
+
+                    startActivity(intent);
+                });
+
+        ViewCompat.setOnApplyWindowInsetsListener(
+                findViewById(R.id.main),
+                (v, insets) -> {
+
+                    Insets systemBars =
+                            insets.getInsets(
+                                    WindowInsetsCompat.Type.systemBars()
+                            );
+
+                    v.setPadding(
+                            systemBars.left,
+                            systemBars.top,
+                            systemBars.right,
+                            systemBars.bottom
+                    );
+
+                    return insets;
+                }
+        );
     }
 }
