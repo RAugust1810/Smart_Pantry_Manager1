@@ -3,18 +3,27 @@ package com.smartpantry.manager;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class PantryActivity extends AppCompatActivity {
 
     private DatabaseHelper databaseHelper;
-    private LinearLayout ingredientsContainer;
+    private RecyclerView ingredientsRecyclerView;
+
+    private final List<Ingredient> ingredientList = new ArrayList<>();
+    private RecyclerView.Adapter<IngredientViewHolder> adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,128 +32,54 @@ public class PantryActivity extends AppCompatActivity {
 
         databaseHelper = new DatabaseHelper(this);
 
-        ingredientsContainer = findViewById(R.id.ingredientsContainer);
+        ingredientsRecyclerView =
+                findViewById(R.id.ingredientsRecyclerView);
 
-        // Add Ingredient button
-        findViewById(R.id.btnAddIngredient).setOnClickListener(v -> {
+        ingredientsRecyclerView.setLayoutManager(
+                new LinearLayoutManager(this)
+        );
 
-            Intent intent = new Intent(
-                    PantryActivity.this,
-                    AddIngredientActivity.class
-            );
+        adapter = new RecyclerView.Adapter<IngredientViewHolder>() {
 
-            startActivity(intent);
-        });
+            @Override
+            public IngredientViewHolder onCreateViewHolder(
+                    ViewGroup parent,
+                    int viewType) {
 
-        // View Recommended Recipes button
-        findViewById(R.id.btnViewRecipes).setOnClickListener(v -> {
-
-            Intent intent = new Intent(
-                    PantryActivity.this,
-                    RecipeActivity.class
-            );
-
-            startActivity(intent);
-        });
-
-        loadIngredients();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        if (databaseHelper != null) {
-            loadIngredients();
-        }
-    }
-
-    private void loadIngredients() {
-
-        ingredientsContainer.removeAllViews();
-
-        Cursor cursor = databaseHelper.getAllIngredients();
-
-        if (cursor.getCount() == 0) {
-
-            TextView emptyMessage = new TextView(this);
-
-            emptyMessage.setText(
-                    "No ingredients added yet."
-            );
-
-            emptyMessage.setTextSize(16);
-            emptyMessage.setPadding(0, 16, 0, 16);
-
-            ingredientsContainer.addView(emptyMessage);
-
-        } else {
-
-            while (cursor.moveToNext()) {
-
-                int ingredientId = cursor.getInt(
-                        cursor.getColumnIndexOrThrow("id")
-                );
-
-                String name = cursor.getString(
-                        cursor.getColumnIndexOrThrow("name")
-                );
-
-                double quantity = cursor.getDouble(
-                        cursor.getColumnIndexOrThrow("quantity")
-                );
-
-                String unit = cursor.getString(
-                        cursor.getColumnIndexOrThrow("unit")
-                );
-
-                String category = cursor.getString(
-                        cursor.getColumnIndexOrThrow("category")
-                );
-
-                View ingredientView = getLayoutInflater()
+                View view = LayoutInflater.from(parent.getContext())
                         .inflate(
                                 R.layout.item_ingredient,
-                                ingredientsContainer,
+                                parent,
                                 false
                         );
 
-                TextView tvName = ingredientView.findViewById(
-                        R.id.tvIngredientName
+                return new IngredientViewHolder(view);
+            }
+
+            @Override
+            public void onBindViewHolder(
+                    IngredientViewHolder holder,
+                    int position) {
+
+                Ingredient ingredient =
+                        ingredientList.get(position);
+
+                holder.tvName.setText(
+                        ingredient.name
                 );
 
-                TextView tvQuantity = ingredientView.findViewById(
-                        R.id.tvIngredientQuantity
+                holder.tvQuantity.setText(
+                        ingredient.quantity + " " + ingredient.unit
                 );
 
-                TextView tvCategory = ingredientView.findViewById(
-                        R.id.tvIngredientCategory
-                );
-
-                // Find Edit button
-                Button btnEdit = ingredientView.findViewById(
-                        R.id.btnEditIngredient
-                );
-
-                // Find Delete button
-                Button btnDelete = ingredientView.findViewById(
-                        R.id.btnDeleteIngredient
-                );
-
-                tvName.setText(name);
-
-                tvQuantity.setText(
-                        quantity + " " + unit
-                );
-
-                tvCategory.setText(
-                        category == null || category.isEmpty()
+                holder.tvCategory.setText(
+                        ingredient.category == null ||
+                                ingredient.category.isEmpty()
                                 ? "No category"
-                                : category
+                                : ingredient.category
                 );
 
-                // Edit ingredient
-                btnEdit.setOnClickListener(v -> {
+                holder.btnEdit.setOnClickListener(v -> {
 
                     Intent intent = new Intent(
                             PantryActivity.this,
@@ -153,38 +88,37 @@ public class PantryActivity extends AppCompatActivity {
 
                     intent.putExtra(
                             "ingredient_id",
-                            ingredientId
+                            ingredient.id
                     );
 
                     intent.putExtra(
                             "ingredient_name",
-                            name
+                            ingredient.name
                     );
 
                     intent.putExtra(
                             "ingredient_quantity",
-                            quantity
+                            ingredient.quantity
                     );
 
                     intent.putExtra(
                             "ingredient_unit",
-                            unit
+                            ingredient.unit
                     );
 
                     intent.putExtra(
                             "ingredient_category",
-                            category
+                            ingredient.category
                     );
 
                     startActivity(intent);
                 });
 
-                // Delete ingredient
-                btnDelete.setOnClickListener(v -> {
+                holder.btnDelete.setOnClickListener(v -> {
 
                     boolean deleted =
                             databaseHelper.deleteIngredient(
-                                    ingredientId
+                                    ingredient.id
                             );
 
                     if (deleted) {
@@ -206,13 +140,160 @@ public class PantryActivity extends AppCompatActivity {
                         ).show();
                     }
                 });
-
-                ingredientsContainer.addView(
-                        ingredientView
-                );
             }
+
+            @Override
+            public int getItemCount() {
+                return ingredientList.size();
+            }
+        };
+
+        ingredientsRecyclerView.setAdapter(adapter);
+
+        findViewById(R.id.btnAddIngredient)
+                .setOnClickListener(v -> {
+
+                    Intent intent = new Intent(
+                            PantryActivity.this,
+                            AddIngredientActivity.class
+                    );
+
+                    startActivity(intent);
+                });
+
+        findViewById(R.id.btnViewRecipes)
+                .setOnClickListener(v -> {
+
+                    Intent intent = new Intent(
+                            PantryActivity.this,
+                            RecipeActivity.class
+                    );
+
+                    startActivity(intent);
+                });
+
+        loadIngredients();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (databaseHelper != null) {
+            loadIngredients();
+        }
+    }
+
+    private void loadIngredients() {
+
+        ingredientList.clear();
+
+        Cursor cursor =
+                databaseHelper.getAllIngredients();
+
+        while (cursor.moveToNext()) {
+
+            int ingredientId =
+                    cursor.getInt(
+                            cursor.getColumnIndexOrThrow("id")
+                    );
+
+            String name =
+                    cursor.getString(
+                            cursor.getColumnIndexOrThrow("name")
+                    );
+
+            double quantity =
+                    cursor.getDouble(
+                            cursor.getColumnIndexOrThrow("quantity")
+                    );
+
+            String unit =
+                    cursor.getString(
+                            cursor.getColumnIndexOrThrow("unit")
+                    );
+
+            String category =
+                    cursor.getString(
+                            cursor.getColumnIndexOrThrow("category")
+                    );
+
+            ingredientList.add(
+                    new Ingredient(
+                            ingredientId,
+                            name,
+                            quantity,
+                            unit,
+                            category
+                    )
+            );
         }
 
         cursor.close();
+
+        adapter.notifyDataSetChanged();
+    }
+
+    private static class Ingredient {
+
+        int id;
+        String name;
+        double quantity;
+        String unit;
+        String category;
+
+        Ingredient(
+                int id,
+                String name,
+                double quantity,
+                String unit,
+                String category) {
+
+            this.id = id;
+            this.name = name;
+            this.quantity = quantity;
+            this.unit = unit;
+            this.category = category;
+        }
+    }
+
+    private static class IngredientViewHolder
+            extends RecyclerView.ViewHolder {
+
+        TextView tvName;
+        TextView tvQuantity;
+        TextView tvCategory;
+
+        Button btnEdit;
+        Button btnDelete;
+
+        IngredientViewHolder(View itemView) {
+            super(itemView);
+
+            tvName =
+                    itemView.findViewById(
+                            R.id.tvIngredientName
+                    );
+
+            tvQuantity =
+                    itemView.findViewById(
+                            R.id.tvIngredientQuantity
+                    );
+
+            tvCategory =
+                    itemView.findViewById(
+                            R.id.tvIngredientCategory
+                    );
+
+            btnEdit =
+                    itemView.findViewById(
+                            R.id.btnEditIngredient
+                    );
+
+            btnDelete =
+                    itemView.findViewById(
+                            R.id.btnDeleteIngredient
+                    );
+        }
     }
 }
