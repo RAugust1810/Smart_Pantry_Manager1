@@ -9,9 +9,6 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class RecipeActivity extends AppCompatActivity {
 
     private DatabaseHelper databaseHelper;
@@ -40,7 +37,7 @@ public class RecipeActivity extends AppCompatActivity {
             return;
         }
 
-        databaseHelper.addRecipe(
+        long chickenPotatoRecipeId = addRecipeWithId(
                 "Chicken & Potato Bake",
                 "A simple meal made with chicken, potatoes and vegetables.",
                 "Chicken, Potatoes",
@@ -51,7 +48,21 @@ public class RecipeActivity extends AppCompatActivity {
                         "5. Bake until the chicken and potatoes are fully cooked."
         );
 
-        databaseHelper.addRecipe(
+        databaseHelper.addRecipeIngredient(
+                (int) chickenPotatoRecipeId,
+                "Chicken",
+                1,
+                "kg"
+        );
+
+        databaseHelper.addRecipeIngredient(
+                (int) chickenPotatoRecipeId,
+                "Potatoes",
+                2,
+                "kg"
+        );
+
+        long vegetableStirFryRecipeId = addRecipeWithId(
                 "Vegetable Stir Fry",
                 "A quick stir fry made with mixed vegetables.",
                 "Vegetables",
@@ -62,7 +73,14 @@ public class RecipeActivity extends AppCompatActivity {
                         "5. Serve while warm."
         );
 
-        databaseHelper.addRecipe(
+        databaseHelper.addRecipeIngredient(
+                (int) vegetableStirFryRecipeId,
+                "Vegetables",
+                2,
+                "kg"
+        );
+
+        long chickenVegetableRecipeId = addRecipeWithId(
                 "Chicken & Vegetable Stir Fry",
                 "A simple stir fry using chicken and vegetables.",
                 "Chicken, Vegetables",
@@ -74,31 +92,57 @@ public class RecipeActivity extends AppCompatActivity {
                         "6. Serve while warm."
         );
 
+        databaseHelper.addRecipeIngredient(
+                (int) chickenVegetableRecipeId,
+                "Chicken",
+                1,
+                "kg"
+        );
+
+        databaseHelper.addRecipeIngredient(
+                (int) chickenVegetableRecipeId,
+                "Vegetables",
+                2,
+                "kg"
+        );
+
         cursor.close();
+    }
+
+    private long addRecipeWithId(
+            String name,
+            String description,
+            String ingredients,
+            String instructions) {
+
+        databaseHelper.addRecipe(
+                name,
+                description,
+                ingredients,
+                instructions
+        );
+
+        Cursor cursor =
+                databaseHelper.getAllRecipes();
+
+        long recipeId = -1;
+
+        if (cursor.moveToLast()) {
+
+            recipeId =
+                    cursor.getLong(
+                            cursor.getColumnIndexOrThrow("id")
+                    );
+        }
+
+        cursor.close();
+
+        return recipeId;
     }
 
     private void loadRecommendedRecipes() {
 
         recipesContainer.removeAllViews();
-
-        List<String> pantryIngredients = new ArrayList<>();
-
-        Cursor pantryCursor =
-                databaseHelper.getAllIngredients();
-
-        while (pantryCursor.moveToNext()) {
-
-            String ingredientName =
-                    pantryCursor.getString(
-                            pantryCursor.getColumnIndexOrThrow("name")
-                    );
-
-            pantryIngredients.add(
-                    normalizeIngredientName(ingredientName)
-            );
-        }
-
-        pantryCursor.close();
 
         Cursor recipeCursor =
                 databaseHelper.getRecommendedRecipes();
@@ -127,34 +171,123 @@ public class RecipeActivity extends AppCompatActivity {
                             recipeCursor.getColumnIndexOrThrow("ingredients")
                     );
 
-            String[] recipeIngredients =
-                    ingredientsText.split(",");
+            Cursor recipeIngredientsCursor =
+                    databaseHelper.getRecipeIngredients(recipeId);
 
-            int matchedIngredients = 0;
+            int requiredIngredients = 0;
+            int availableIngredients = 0;
 
-            for (String ingredient : recipeIngredients) {
+            while (recipeIngredientsCursor.moveToNext()) {
 
-                String requiredIngredient =
-                        normalizeIngredientName(ingredient);
+                requiredIngredients++;
 
-                if (pantryIngredients.contains(
-                        requiredIngredient)) {
+                String requiredName =
+                        recipeIngredientsCursor.getString(
+                                recipeIngredientsCursor
+                                        .getColumnIndexOrThrow(
+                                                "ingredient_name"
+                                        )
+                        );
 
-                    matchedIngredients++;
+                double requiredQuantity =
+                        recipeIngredientsCursor.getDouble(
+                                recipeIngredientsCursor
+                                        .getColumnIndexOrThrow(
+                                                "required_quantity"
+                                        )
+                        );
+
+                String requiredUnit =
+                        recipeIngredientsCursor.getString(
+                                recipeIngredientsCursor
+                                        .getColumnIndexOrThrow(
+                                                "unit"
+                                        )
+                        );
+
+                Cursor pantryCursor =
+                        databaseHelper.getAllIngredients();
+
+                boolean ingredientAvailable = false;
+
+                while (pantryCursor.moveToNext()) {
+
+                    String pantryName =
+                            pantryCursor.getString(
+                                    pantryCursor
+                                            .getColumnIndexOrThrow(
+                                                    "name"
+                                            )
+                            );
+
+                    double pantryQuantity =
+                            pantryCursor.getDouble(
+                                    pantryCursor
+                                            .getColumnIndexOrThrow(
+                                                    "quantity"
+                                            )
+                            );
+
+                    String pantryUnit =
+                            pantryCursor.getString(
+                                    pantryCursor
+                                            .getColumnIndexOrThrow(
+                                                    "unit"
+                                            )
+                            );
+
+                    String normalizedPantryName =
+                            normalizeIngredientName(
+                                    pantryName
+                            );
+
+                    String normalizedRequiredName =
+                            normalizeIngredientName(
+                                    requiredName
+                            );
+
+                    boolean nameMatches =
+                            normalizedPantryName.equals(
+                                    normalizedRequiredName
+                            );
+
+                    boolean unitMatches =
+                            pantryUnit.trim()
+                                    .equalsIgnoreCase(
+                                            requiredUnit.trim()
+                                    );
+
+                    boolean quantityMatches =
+                            pantryQuantity >= requiredQuantity;
+
+                    if (nameMatches &&
+                            unitMatches &&
+                            quantityMatches) {
+
+                        ingredientAvailable = true;
+                        break;
+                    }
+                }
+
+                pantryCursor.close();
+
+                if (ingredientAvailable) {
+                    availableIngredients++;
                 }
             }
 
-            int totalIngredients =
-                    recipeIngredients.length;
+            recipeIngredientsCursor.close();
 
             /*
-             * Strict matching rule:
-             * EVERY ingredient must be available.
+             * Strict recipe matching:
              *
-             * Partial matches are not displayed.
+             * A recipe is displayed only when ALL
+             * required ingredients are available
+             * in the required quantities and units.
              */
             boolean recipeCanBeMade =
-                    matchedIngredients == totalIngredients;
+                    requiredIngredients > 0 &&
+                            availableIngredients == requiredIngredients;
 
             if (recipeCanBeMade) {
 
@@ -180,10 +313,8 @@ public class RecipeActivity extends AppCompatActivity {
                                 description + "\n\n" +
                                 "Ingredients: " +
                                 ingredientsText + "\n\n" +
-                                "Ingredients available: " +
-                                matchedIngredients +
-                                " of " +
-                                totalIngredients + "\n" +
+                                "All required ingredients " +
+                                "and quantities are available.\n" +
                                 "Match: 100%"
                 );
 
@@ -246,7 +377,8 @@ public class RecipeActivity extends AppCompatActivity {
                     new TextView(this);
 
             noRecipesMessage.setText(
-                    "No recipes match your current pantry ingredients."
+                    "No recipes match your current pantry " +
+                            "ingredients and quantities."
             );
 
             noRecipesMessage.setTextSize(16);
@@ -266,6 +398,7 @@ public class RecipeActivity extends AppCompatActivity {
 
     /*
      * Makes simple singular/plural differences easier to match.
+     *
      * Examples:
      * tomatoes -> tomato
      * potatoes -> potato

@@ -9,7 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "smart_pantry.db";
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 5;
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -37,6 +37,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 ")";
 
         db.execSQL(createRecipesTable);
+
+        // Stores the individual ingredients and quantities required
+        // for each recipe.
+        String createRecipeIngredientsTable =
+                "CREATE TABLE recipe_ingredients (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "recipe_id INTEGER NOT NULL, " +
+                        "ingredient_name TEXT NOT NULL, " +
+                        "required_quantity REAL NOT NULL, " +
+                        "unit TEXT NOT NULL" +
+                        ")";
+
+        db.execSQL(createRecipeIngredientsTable);
     }
 
     @Override
@@ -92,6 +105,66 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                                     "6. Serve while warm.",
                             "Chicken & Vegetable Stir Fry"
                     }
+            );
+        }
+
+        // Upgrade from database version 4 to version 5.
+        // This adds recipe quantity requirements without
+        // deleting existing pantry ingredients or recipes.
+        if (oldVersion < 5) {
+
+            String createRecipeIngredientsTable =
+                    "CREATE TABLE recipe_ingredients (" +
+                            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                            "recipe_id INTEGER NOT NULL, " +
+                            "ingredient_name TEXT NOT NULL, " +
+                            "required_quantity REAL NOT NULL, " +
+                            "unit TEXT NOT NULL" +
+                            ")";
+
+            db.execSQL(createRecipeIngredientsTable);
+
+            // Chicken & Potato Bake
+            db.execSQL(
+                    "INSERT INTO recipe_ingredients " +
+                            "(recipe_id, ingredient_name, required_quantity, unit) " +
+                            "SELECT id, 'Chicken', 1, 'kg' " +
+                            "FROM recipes " +
+                            "WHERE name = 'Chicken & Potato Bake'"
+            );
+
+            db.execSQL(
+                    "INSERT INTO recipe_ingredients " +
+                            "(recipe_id, ingredient_name, required_quantity, unit) " +
+                            "SELECT id, 'Potatoes', 2, 'kg' " +
+                            "FROM recipes " +
+                            "WHERE name = 'Chicken & Potato Bake'"
+            );
+
+            // Vegetable Stir Fry
+            db.execSQL(
+                    "INSERT INTO recipe_ingredients " +
+                            "(recipe_id, ingredient_name, required_quantity, unit) " +
+                            "SELECT id, 'Vegetables', 2, 'kg' " +
+                            "FROM recipes " +
+                            "WHERE name = 'Vegetable Stir Fry'"
+            );
+
+            // Chicken & Vegetable Stir Fry
+            db.execSQL(
+                    "INSERT INTO recipe_ingredients " +
+                            "(recipe_id, ingredient_name, required_quantity, unit) " +
+                            "SELECT id, 'Chicken', 1, 'kg' " +
+                            "FROM recipes " +
+                            "WHERE name = 'Chicken & Vegetable Stir Fry'"
+            );
+
+            db.execSQL(
+                    "INSERT INTO recipe_ingredients " +
+                            "(recipe_id, ingredient_name, required_quantity, unit) " +
+                            "SELECT id, 'Vegetables', 2, 'kg' " +
+                            "FROM recipes " +
+                            "WHERE name = 'Chicken & Vegetable Stir Fry'"
             );
         }
     }
@@ -179,6 +252,45 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         );
     }
 
+    // Add an ingredient requirement to a recipe
+    public boolean addRecipeIngredient(
+            int recipeId,
+            String ingredientName,
+            double requiredQuantity,
+            String unit) {
+
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+
+        values.put("recipe_id", recipeId);
+        values.put("ingredient_name", ingredientName);
+        values.put("required_quantity", requiredQuantity);
+        values.put("unit", unit);
+
+        long result = db.insert(
+                "recipe_ingredients",
+                null,
+                values
+        );
+
+        return result != -1;
+    }
+
+    // Get all ingredient requirements for a recipe
+    public Cursor getRecipeIngredients(int recipeId) {
+
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        return db.rawQuery(
+                "SELECT * FROM recipe_ingredients " +
+                        "WHERE recipe_id = ?",
+                new String[]{
+                        String.valueOf(recipeId)
+                }
+        );
+    }
+
     // Delete ingredient
     public boolean deleteIngredient(int id) {
 
@@ -187,7 +299,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         int result = db.delete(
                 "ingredients",
                 "id = ?",
-                new String[]{String.valueOf(id)}
+                new String[]{
+                        String.valueOf(id)
+                }
         );
 
         return result > 0;
@@ -214,7 +328,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 "ingredients",
                 values,
                 "id = ?",
-                new String[]{String.valueOf(id)}
+                new String[]{
+                        String.valueOf(id)
+                }
         );
 
         return result > 0;
