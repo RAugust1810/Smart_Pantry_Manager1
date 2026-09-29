@@ -25,19 +25,25 @@ public class PantryActivity extends AppCompatActivity {
 
         ingredientsContainer = findViewById(R.id.ingredientsContainer);
 
+        // Add Ingredient button
         findViewById(R.id.btnAddIngredient).setOnClickListener(v -> {
+
             Intent intent = new Intent(
                     PantryActivity.this,
                     AddIngredientActivity.class
             );
+
             startActivity(intent);
         });
 
+        // View Recommended Recipes button
         findViewById(R.id.btnViewRecipes).setOnClickListener(v -> {
+
             Intent intent = new Intent(
                     PantryActivity.this,
                     RecipeActivity.class
             );
+
             startActivity(intent);
         });
 
@@ -115,6 +121,12 @@ public class PantryActivity extends AppCompatActivity {
                         R.id.tvIngredientCategory
                 );
 
+                // Find Edit button
+                Button btnEdit = ingredientView.findViewById(
+                        R.id.btnEditIngredient
+                );
+
+                // Find Delete button
                 Button btnDelete = ingredientView.findViewById(
                         R.id.btnDeleteIngredient
                 );
@@ -126,11 +138,48 @@ public class PantryActivity extends AppCompatActivity {
                 );
 
                 tvCategory.setText(
-                        category.isEmpty()
+                        category == null || category.isEmpty()
                                 ? "No category"
                                 : category
                 );
 
+                // Edit ingredient
+                btnEdit.setOnClickListener(v -> {
+
+                    Intent intent = new Intent(
+                            PantryActivity.this,
+                            EditIngredientActivity.class
+                    );
+
+                    intent.putExtra(
+                            "ingredient_id",
+                            ingredientId
+                    );
+
+                    intent.putExtra(
+                            "ingredient_name",
+                            name
+                    );
+
+                    intent.putExtra(
+                            "ingredient_quantity",
+                            quantity
+                    );
+
+                    intent.putExtra(
+                            "ingredient_unit",
+                            unit
+                    );
+
+                    intent.putExtra(
+                            "ingredient_category",
+                            category
+                    );
+
+                    startActivity(intent);
+                });
+
+                // Delete ingredient
                 btnDelete.setOnClickListener(v -> {
 
                     boolean deleted =

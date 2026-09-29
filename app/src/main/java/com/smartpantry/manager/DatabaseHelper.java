@@ -140,4 +140,30 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return result > 0;
     }
 
+    public boolean updateIngredient(
+            int id,
+            String name,
+            double quantity,
+            String unit,
+            String category) {
+
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+
+        values.put("name", name);
+        values.put("quantity", quantity);
+        values.put("unit", unit);
+        values.put("category", category);
+
+        int result = db.update(
+                "ingredients",
+                values,
+                "id = ?",
+                new String[]{String.valueOf(id)}
+        );
+
+        return result > 0;
+    }
+
 }
