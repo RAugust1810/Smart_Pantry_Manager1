@@ -81,7 +81,6 @@ public class RecipeActivity extends AppCompatActivity {
 
         recipesContainer.removeAllViews();
 
-        // Get ingredients currently in the pantry
         List<String> pantryIngredients = new ArrayList<>();
 
         Cursor pantryCursor =
@@ -95,13 +94,12 @@ public class RecipeActivity extends AppCompatActivity {
                     );
 
             pantryIngredients.add(
-                    ingredientName.trim().toLowerCase()
+                    normalizeIngredientName(ingredientName)
             );
         }
 
         pantryCursor.close();
 
-        // Get all recipes
         Cursor recipeCursor =
                 databaseHelper.getRecommendedRecipes();
 
@@ -137,7 +135,7 @@ public class RecipeActivity extends AppCompatActivity {
             for (String ingredient : recipeIngredients) {
 
                 String requiredIngredient =
-                        ingredient.trim().toLowerCase();
+                        normalizeIngredientName(ingredient);
 
                 if (pantryIngredients.contains(
                         requiredIngredient)) {
@@ -149,13 +147,16 @@ public class RecipeActivity extends AppCompatActivity {
             int totalIngredients =
                     recipeIngredients.length;
 
-            int matchPercentage =
-                    (matchedIngredients * 100)
-                            / totalIngredients;
+            /*
+             * Strict matching rule:
+             * EVERY ingredient must be available.
+             *
+             * Partial matches are not displayed.
+             */
+            boolean recipeCanBeMade =
+                    matchedIngredients == totalIngredients;
 
-            // Only display recipes with at least
-            // one matching ingredient
-            if (matchedIngredients > 0) {
+            if (recipeCanBeMade) {
 
                 LinearLayout recipeLayout =
                         new LinearLayout(this);
@@ -183,8 +184,7 @@ public class RecipeActivity extends AppCompatActivity {
                                 matchedIngredients +
                                 " of " +
                                 totalIngredients + "\n" +
-                                "Match: " +
-                                matchPercentage + "%"
+                                "Match: 100%"
                 );
 
                 recipeView.setTextSize(16);
@@ -228,10 +228,7 @@ public class RecipeActivity extends AppCompatActivity {
                 });
 
                 recipeLayout.addView(recipeView);
-
-                recipeLayout.addView(
-                        btnViewRecipe
-                );
+                recipeLayout.addView(btnViewRecipe);
 
                 recipesContainer.addView(
                         recipeLayout
@@ -243,7 +240,6 @@ public class RecipeActivity extends AppCompatActivity {
 
         recipeCursor.close();
 
-        // Show a message if there are no matching recipes
         if (recipeCount == 0) {
 
             TextView noRecipesMessage =
@@ -266,5 +262,49 @@ public class RecipeActivity extends AppCompatActivity {
                     noRecipesMessage
             );
         }
+    }
+
+    /*
+     * Makes simple singular/plural differences easier to match.
+     * Examples:
+     * tomatoes -> tomato
+     * potatoes -> potato
+     * apples -> apple
+     */
+    private String normalizeIngredientName(String name) {
+
+        String normalized =
+                name.trim().toLowerCase();
+
+        if (normalized.endsWith("ies")
+                && normalized.length() > 3) {
+
+            normalized =
+                    normalized.substring(
+                            0,
+                            normalized.length() - 3
+                    ) + "y";
+
+        } else if (normalized.endsWith("oes")
+                && normalized.length() > 3) {
+
+            normalized =
+                    normalized.substring(
+                            0,
+                            normalized.length() - 2
+                    );
+
+        } else if (normalized.endsWith("s")
+                && !normalized.endsWith("ss")
+                && normalized.length() > 2) {
+
+            normalized =
+                    normalized.substring(
+                            0,
+                            normalized.length() - 1
+                    );
+        }
+
+        return normalized;
     }
 }
